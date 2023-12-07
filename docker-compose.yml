@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: LoginMYSQL!
+      TZ: Asia/Shanghai
+    volumes:
+      - ./runtime/mysql.cnf:/etc/mysql/my.cnf:ro
+      - ./runtime/volumes/mysql:/var/lib/mysql
+
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - ./runtime/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+  php:
+    build:
+      dockerfile: Dockerfile
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - .:/var/www
+    ports:
+      - 8787:8787
+    command: 'php webman start'
