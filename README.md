@@ -1,3 +1,1 @@
-**template**
-
-Don't repeat yourself. See branches.
+fastapi-starter
