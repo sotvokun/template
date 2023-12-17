@@ -35,7 +35,8 @@
     "symfony/cache": "^6.3",
     "vlucas/phpdotenv": "^5.5",
     "webman/event": "^1.0",
-    "robmorgan/phinx": "^0.15.2"
+    "robmorgan/phinx": "^0.15.2",
+    "workerman/crontab": "^1.0"
   },
   "suggest": {
     "ext-event": "For better performance. "

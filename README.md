@@ -12,6 +12,7 @@
 - `vlucas/phpdotenv` .env 文件支持
 - `webman/event` 事件系统
 - `robmorgan/phinx` Migration 支持
+- `webman/crontab` Crontab 支持
 
 ## 快速上手
 ### 1. 快速配置环境
