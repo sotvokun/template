@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from copy import deepcopy
+
 import app.config
 
 def config(key: str, default: Optional[str] = None) -> Any:
