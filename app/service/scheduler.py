@@ -17,4 +17,4 @@ def inject_scheduler() -> AsyncIOScheduler:
     return _scheduler
 
 
-SchedulerD = Annotated(AsyncIOScheduler, Depends(inject_scheduler))
+SchedulerD = Annotated[AsyncIOScheduler, Depends(inject_scheduler)]
