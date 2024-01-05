@@ -35,7 +35,7 @@ def initialize(connection_string: str):
     global _redis
     if _redis is not None:
         return
-    _redis: Redis = Redis.from_url(connection_string)
+    _redis = Redis.from_url(connection_string)
 
 
 def inject_redis() -> RedisWrapper:

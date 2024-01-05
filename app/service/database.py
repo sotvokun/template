@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from typing import Optional, Annotated, Any
 from fastapi import Depends
 
@@ -13,15 +13,17 @@ def initialize(connection_string: str, args: Any = None):
     _engine = create_engine(connection_string, connect_args=args)
 
 
-def inject_db_session() -> Session:
+def inject_db_session():
     global _engine
     if _engine is None:
         raise RuntimeError("Database engine is not initialized")
+    session: Optional[Session] = None
     try:
-        session = Session(bind=_engine)
+        session = sessionmaker(bind=_engine)()
         yield session
     finally:
-        session.close()
+        if session is not None:
+            session.close()
 
 
 def require_db_session() -> Session:
