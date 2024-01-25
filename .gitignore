@@ -5,6 +5,7 @@ $RECYCLE.BIN/
 *.lnk
 
 .venv/
+venv/
 .vscode/
 
 __pycache__/
