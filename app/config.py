@@ -1,7 +1,10 @@
+from os import getenv
+
+
 project_name = "starter"
 
 connection_strings = {
-    "redis": "redis://localhost:6379/0",
+    "redis": getenv("REDIS_CONNECTION"),
 }
 
 redis = {
