@@ -1,19 +1,22 @@
 from sqlalchemy import create_engine, Engine
-from sqlalchemy.orm import Session, sessionmaker
-from typing import Optional, Annotated, Any
-from fastapi import Depends
+from sqlalchemy.orm import sessionmaker, Session
+from typing import Optional, Callable
 
 
 _engine: Optional[Engine] = None
 
-def initialize(connection_string: str, args: Any = None):
+
+def initialize(url: str, **kwargs):
+    """
+    Initialize the database engine
+    """
     global _engine
     if _engine is not None:
         return
-    _engine = create_engine(connection_string, connect_args=args)
+    _engine = create_engine(url, **kwargs)
 
 
-def inject_db_session():
+def inject():
     global _engine
     if _engine is None:
         raise RuntimeError("Database engine is not initialized")
@@ -26,11 +29,11 @@ def inject_db_session():
             session.close()
 
 
-def require_db_session() -> Session:
+def require_session[T](fn: Callable[[Session], T]) -> T:
     global _engine
     if _engine is None:
         raise RuntimeError("Database engine is not initialized")
-    return Session(bind=_engine)
-
-
-SessionD = Annotated[Session, Depends(inject_db_session)]
+    session = sessionmaker(bind=_engine)()
+    result = fn(session)
+    session.close()
+    return result
