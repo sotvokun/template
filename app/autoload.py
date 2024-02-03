@@ -168,11 +168,14 @@ class Autoloader:
             self.logger.info(f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
             return
 
-        if hasattr(event_module, "on_hooks") and callable(getattr(event_module, "on_hooks")):
+        ON_INSTALL = "on_install"
+        if hasattr(event_module, ON_INSTALL) and callable(getattr(event_module, ON_INSTALL)):
             event_module.on_hooks(self.main)
 
-        if hasattr(event_module, "on_startup") and callable(getattr(event_module, "on_startup")):
+        ON_STARTUP = "on_startup"
+        if hasattr(event_module, ON_STARTUP) and callable(getattr(event_module, ON_STARTUP)):
             self.main.router.on_startup.append(event_module.on_startup)
 
-        if hasattr(event_module, "on_shutdown") and callable(getattr(event_module, "on_shutdown")):
+        ON_SHUTDOWN = "on_shutdown"
+        if hasattr(event_module, ON_SHUTDOWN) and callable(getattr(event_module, ON_SHUTDOWN)):
             self.main.router.on_shutdown.append(event_module.on_shutdown)
