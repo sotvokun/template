@@ -170,7 +170,7 @@ class Autoloader:
 
         ON_INSTALL = "on_install"
         if hasattr(event_module, ON_INSTALL) and callable(getattr(event_module, ON_INSTALL)):
-            event_module.on_hooks(self.main)
+            event_module.on_install(self.main)
 
         ON_STARTUP = "on_startup"
         if hasattr(event_module, ON_STARTUP) and callable(getattr(event_module, ON_STARTUP)):

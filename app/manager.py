@@ -45,7 +45,7 @@ def subapp(root_dir: str, name: str, main_subapp: str, route: Optional[str] = No
         "\tpass",
         "",
         "",
-        "def on_hook(app: FastAPI) -> None:",
+        "def on_install(app: FastAPI) -> None:",
         "\tpass",
         "",
         "",
