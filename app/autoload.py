@@ -7,54 +7,52 @@ from typing import Optional, TypedDict, Unpack, Any
 from fastapi import FastAPI, APIRouter
 
 
-class AutoloaderLoggerFormatter(logging.Formatter):
-    _format = "%(levelname)s: [%(name)s] %(message)s"
-    _reset = "\x1b[0m"
-    _red = "\x1b[31m"
-    _green = "\x1b[32m"
-    _yellow = "\x1b[33m"
-    _grey = "\x1b[90m"
-    _bold_red = "\x1b[1;31m"
-    _light_gray = "\x1b[37m"
-    _format = "[%(name)s] %(levelname)-17s %(message)s"
-
-    COLORS = {
-        logging.DEBUG: _grey,
-        logging.INFO: _green,
-        logging.WARNING: _yellow,
-        logging.ERROR: _red,
-        logging.CRITICAL: _bold_red,
-    }
-
-    def format(self, record: logging.LogRecord) -> str:
-        color = self.COLORS.get(record.levelno, self._reset)
-        record.levelname = f"{color}{record.levelname}{self._reset}" + ":"
-        record.name = f"{self._light_gray}{record.name}{self._reset}"
-        formatter = logging.Formatter(self._format)
-        return formatter.format(record)
+_autoloader_instance: Optional["Autoloader"] = None
 
 
 class AutoloaderOptions(TypedDict):
     main_subapp: str
 
 
-class AutoloadModule(Enum):
-    route = "route"
-    event = "event"
-
-
-_autoloader_instance: Optional["Autoloader"] = None
-
-
 class Autoloader:
+
+    class Module(Enum):
+        route = "route"
+        event = "event"
+
+    class _LoggerFormatter(logging.Formatter):
+        _format = "%(levelname)s: [%(name)s] %(message)s"
+        _reset = "\x1b[0m"
+        _red = "\x1b[31m"
+        _green = "\x1b[32m"
+        _yellow = "\x1b[33m"
+        _grey = "\x1b[90m"
+        _bold_red = "\x1b[1;31m"
+        _light_gray = "\x1b[37m"
+        _format = "[%(name)s] %(levelname)-17s %(message)s"
+
+        COLORS = {
+            logging.DEBUG: _grey,
+            logging.INFO: _green,
+            logging.WARNING: _yellow,
+            logging.ERROR: _red,
+            logging.CRITICAL: _bold_red,
+        }
+
+        def format(self, record: logging.LogRecord) -> str:
+            color = self.COLORS.get(record.levelno, self._reset)
+            record.levelname = f"{color}{record.levelname}{self._reset}" + ":"
+            record.name = f"{self._light_gray}{record.name}{self._reset}"
+            formatter = logging.Formatter(self._format)
+            return formatter.format(record)
 
     options: AutoloaderOptions = {
         "main_subapp": "site"
     }
 
-    load_modules: list[AutoloadModule] = [
-        AutoloadModule.route,
-        AutoloadModule.event
+    load_modules: list[Module] = [
+        Module.route,
+        Module.event
     ]
 
     @staticmethod
@@ -63,16 +61,6 @@ class Autoloader:
         Returns the module (Python package) name of a subapp.
         """
         return f"app.{subapp}" + (f".{module}" if module else "")
-
-    @staticmethod
-    def get_config(name: str, default: Any = None):
-        """
-        Returns a config value from the main subapp.
-        """
-        global _autoloader_instance
-        if _autoloader_instance is None:
-            raise RuntimeError("Autoloader not initialized")
-        return _autoloader_instance.config(name, default)
 
     def import_module(self, subapp: str, module: str) -> ModuleType:
         """
@@ -94,7 +82,7 @@ class Autoloader:
 
     def _initialize_logger(self):
         stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(AutoloaderLoggerFormatter())
+        stream_handler.setFormatter(Autoloader._LoggerFormatter())
         self.logger = logging.getLogger("Autoload")
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(stream_handler)
@@ -116,15 +104,15 @@ class Autoloader:
                 continue
             self.load_subapp(subapp, self.load_modules)
 
-    def load_subapp(self, subapp: str, modules: list[AutoloadModule] = []):
+    def load_subapp(self, subapp: str, modules: list[Module] = []):
         """
         Loads a subapp.
         """
         for module in modules:
             match module:
-                case AutoloadModule.route:
+                case Autoloader.Module.route:
                     self.load_subapp_route(subapp)
-                case AutoloadModule.event:
+                case Autoloader.Module.event:
                     self.load_subapp_event(subapp)
 
     def load_subapp_route(self, subapp: str):
@@ -178,3 +166,30 @@ class Autoloader:
         if hasattr(event_module, ON_SHUTDOWN) and callable(
                 getattr(event_module, ON_SHUTDOWN)):
             self.main.router.on_shutdown.append(event_module.on_shutdown)
+
+
+def get_config(name: str, default: Any = None):
+    """
+    Returns a config value from the main subapp.
+    """
+    global _autoloader_instance
+    if _autoloader_instance is None:
+        raise RuntimeError("Autoloader not initialized")
+    return _autoloader_instance.config(name, default)
+
+
+def import_module(subapp: str, module: str) -> ModuleType:
+    """
+    Imports a subapp module (Python package).
+    """
+    global _autoloader_instance
+    if _autoloader_instance is None:
+        raise RuntimeError("Autoloader not initialized")
+    return _autoloader_instance.import_module(subapp, module)
+
+
+def import_main_module(module: str) -> ModuleType:
+    """
+    Imports a module from the main subapp.
+    """
+    return import_module(get_config("main_subapp"), module)
