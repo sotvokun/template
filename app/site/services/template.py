@@ -10,7 +10,8 @@ _templates: Optional[Jinja2Templates] = None
 def initialize(
     directory: str | PathLike | Sequence[str | PathLike],
     *,
-    context_processors: Optional[list[Callable[[Request], dict[str, Any]]]] = None,
+    context_processors: Optional[list[Callable[[
+        Request], dict[str, Any]]]] = None,
     **env_options: Any,
 ):
     global _templates

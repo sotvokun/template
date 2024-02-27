@@ -10,14 +10,12 @@ class SimpleCache:
     _cache: dict[str, Any] = {}
     _cache_expires: dict[str, int] = {}
 
-
     @staticmethod
     def _now() -> int:
         """
         Get the current timestamp with millisecond
         """
         return int(datetime.now().timestamp() * 1000)
-
 
     @staticmethod
     def is_expired(key: str) -> bool:
@@ -27,7 +25,6 @@ class SimpleCache:
         if key not in SimpleCache._cache_expires:
             return True
         return SimpleCache._now() > SimpleCache._cache_expires[key]
-
 
     @staticmethod
     def get[T](
@@ -57,7 +54,6 @@ class SimpleCache:
         else:
             return default
 
-
     @staticmethod
     def set(key: str, value: Any, lifetime_ms: Optional[int] = None) -> None:
         """
@@ -75,7 +71,6 @@ class SimpleCache:
         SimpleCache._cache[key] = value
         if lifetime_ms is not None:
             SimpleCache._cache_expires[key] = SimpleCache._now() + lifetime_ms
-
 
     @staticmethod
     def delete(key: str) -> None:

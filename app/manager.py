@@ -5,13 +5,14 @@ from typing import Optional
 from pathlib import Path
 
 
-def subapp(root_dir: str, name: str, main_subapp: str, route: Optional[str] = None):
+def subapp(root_dir: str, name: str, main_subapp: str,
+           route: Optional[str] = None):
     target_path = os.path.join(root_dir, "app", name)
     if os.path.exists(target_path):
         print(f"Subapp '{name}' already exists.")
         return
 
-    def create_file(name: str, content: str|list[str] = ""):
+    def create_file(name: str, content: str | list[str] = ""):
         file_path = os.path.join(target_path, name)
         with open(file_path, "w", encoding="utf-8", newline=os.linesep) as f:
             if isinstance(content, list):
@@ -31,7 +32,8 @@ def subapp(root_dir: str, name: str, main_subapp: str, route: Optional[str] = No
         f"from fastapi import APIRouter",
         "",
         "",
-        (f"router = APIRouter(prefix=\"{route}\")" if route else "router = APIRouter()"),
+        (f"router = APIRouter(prefix=\"{
+         route}\")" if route else "router = APIRouter()"),
     ])
     create_file("event.py", [
         "from fastapi import FastAPI",

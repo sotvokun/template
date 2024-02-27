@@ -45,6 +45,7 @@ class AutoloadModule(Enum):
 
 _autoloader_instance: Optional["Autoloader"] = None
 
+
 class Autoloader:
 
     options: AutoloaderOptions = {
@@ -56,14 +57,12 @@ class Autoloader:
         AutoloadModule.event
     ]
 
-
     @staticmethod
     def module_name(subapp: str, module: Optional[str]) -> str:
         """
         Returns the module (Python package) name of a subapp.
         """
         return f"app.{subapp}" + (f".{module}" if module else "")
-
 
     @staticmethod
     def get_config(name: str, default: Any = None):
@@ -75,13 +74,11 @@ class Autoloader:
             raise RuntimeError("Autoloader not initialized")
         return _autoloader_instance.config(name, default)
 
-
     def import_module(self, subapp: str, module: str) -> ModuleType:
         """
         Imports a subapp module (Python package).
         """
         return importlib.import_module(self.module_name(subapp, module))
-
 
     def config(self, name: str, default: Any = None):
         """
@@ -92,8 +89,8 @@ class Autoloader:
             config_module = self.import_module(main_subapp, "config")
             return getattr(config_module, name, default)
         except ModuleNotFoundError:
-            raise RuntimeError(f"No `config.py` found in the main subapp: {main_subapp}")
-
+            raise RuntimeError(
+                f"No `config.py` found in the main subapp: {main_subapp}")
 
     def _initialize_logger(self):
         stream_handler = logging.StreamHandler()
@@ -101,7 +98,6 @@ class Autoloader:
         self.logger = logging.getLogger("Autoload")
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(stream_handler)
-
 
     def __init__(self, main: FastAPI, /, **options: Unpack[AutoloaderOptions]):
         global _autoloader_instance
@@ -120,7 +116,6 @@ class Autoloader:
                 continue
             self.load_subapp(subapp, self.load_modules)
 
-
     def load_subapp(self, subapp: str, modules: list[AutoloadModule] = []):
         """
         Loads a subapp.
@@ -132,7 +127,6 @@ class Autoloader:
                 case AutoloadModule.event:
                     self.load_subapp_event(subapp)
 
-
     def load_subapp_route(self, subapp: str):
         """
         Loads a subapp route.
@@ -141,11 +135,13 @@ class Autoloader:
         try:
             route_module = self.import_module(subapp, "route")
         except ModuleNotFoundError:
-            self.logger.info(f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
+            self.logger.info(
+                f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
             return
 
         if not hasattr(route_module, "router"):
-            self.logger.error(f"Module '{module_name}' in subapp '{subapp}' has no router")
+            self.logger.error(f"Module '{module_name}' in subapp '{
+                              subapp}' has no router")
             return
 
         router = getattr(route_module, "router")
@@ -156,7 +152,6 @@ class Autoloader:
 
         self.main.include_router(route_module.router)
 
-
     def load_subapp_event(self, subapp: str):
         """
         Loads and registers a subapp event.
@@ -165,17 +160,21 @@ class Autoloader:
         try:
             event_module = self.import_module(subapp, "event")
         except ModuleNotFoundError:
-            self.logger.info(f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
+            self.logger.info(
+                f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
             return
 
         ON_INSTALL = "on_install"
-        if hasattr(event_module, ON_INSTALL) and callable(getattr(event_module, ON_INSTALL)):
+        if hasattr(event_module, ON_INSTALL) and callable(
+                getattr(event_module, ON_INSTALL)):
             event_module.on_install(self.main)
 
         ON_STARTUP = "on_startup"
-        if hasattr(event_module, ON_STARTUP) and callable(getattr(event_module, ON_STARTUP)):
+        if hasattr(event_module, ON_STARTUP) and callable(
+                getattr(event_module, ON_STARTUP)):
             self.main.router.on_startup.append(event_module.on_startup)
 
         ON_SHUTDOWN = "on_shutdown"
-        if hasattr(event_module, ON_SHUTDOWN) and callable(getattr(event_module, ON_SHUTDOWN)):
+        if hasattr(event_module, ON_SHUTDOWN) and callable(
+                getattr(event_module, ON_SHUTDOWN)):
             self.main.router.on_shutdown.append(event_module.on_shutdown)
