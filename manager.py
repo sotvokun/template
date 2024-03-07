@@ -1,63 +1,31 @@
 #! /usr/bin/python3
 
-import importlib
+from os import path, environ
 
-from argparse import ArgumentParser
-from os import path
+from main import autoloader
+
+
+# Set the NO_LOAD_SUBAPPS environment variable to 1 to prevent subapps
+# from being loaded.
+environ.setdefault("AUTOLOADER_MANAGER_MODE", "1")
 
 
 ROOT_DIR = path.dirname(__file__)
 
 
-def set_subapp_command(parser: ArgumentParser):
-    parser.add_argument(
-        "name",
-        type=str,
-        help="name of the subapp"
-    )
-    parser.add_argument(
-        "-m", "--main-subapp",
-        type=str,
-        default="site",
-        help="name of the main subapp, used for importing stuffs under it"
-    )
-    parser.add_argument(
-        "--route",
-        type=str,
-        help="route of the subapp"
-    )
-
-
 def main():
-    parser = ArgumentParser()
-    subparsers = parser.add_subparsers(
-        title="commands",
-        dest="command",
-    )
-    set_subapp_command(subparsers.add_parser(
-        name="subapp",
-        help="create a new subapp",
-    ))
-    subparsers.add_parser(
-        name="rm-cache",
-        help="remove cache files",
-    )
+    parser, action_dict = autoloader.get_parser()
 
     args = parser.parse_args()
-    if args.command is None:
+
+    if not hasattr(args, "command") or getattr(args, "command") is None:
         parser.print_help()
         return
 
-    command = args.command.replace("-", "_")
+    command = args.command
     command_args = args.__dict__
     del command_args["command"]
-
-    module = importlib.import_module(f"app.manager")
-    if hasattr(module, command) and callable(getattr(module, command)):
-        getattr(module, command)(**command_args, root_dir=ROOT_DIR)
-    else:
-        parser.print_help()
-
+    action_dict[command](**command_args, root_dir=ROOT_DIR)
 
 if __name__ == "__main__":
     main()

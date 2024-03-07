@@ -1,10 +1,17 @@
+import os
 import importlib
 import logging
 
+from argparse import ArgumentParser
 from enum import Enum
 from types import ModuleType
-from typing import Optional, TypedDict, Unpack, Any
+from typing import Callable, Optional, TypedDict, Unpack, Any
 from fastapi import FastAPI, APIRouter
+
+from app.manager import APIManager, Command
+
+
+ENV_AUTOLOADER_MANAGER_MODE = "AUTOLOADER_MANAGER_MODE"
 
 
 _autoloader_instance: Optional["Autoloader"] = None
@@ -19,6 +26,7 @@ class Autoloader:
     class Module(Enum):
         route = "route"
         event = "event"
+        command = "command"
 
     class _LoggerFormatter(logging.Formatter):
         _format = "%(levelname)s: [%(name)s] %(message)s"
@@ -92,50 +100,68 @@ class Autoloader:
 
         self._initialize_logger()
 
+        self.manager_mode = os.environ.get(ENV_AUTOLOADER_MANAGER_MODE, 0)
+        self.loaded_managers = []
         self.main = main
         self.options.update(options)
-        self.load_subapp(self.options["main_subapp"], self.load_modules)
 
         _autoloader_instance = self
+
+        load_modules = [
+            Autoloader.Module.route,
+            Autoloader.Module.event
+        ] if self.manager_mode else [
+            Autoloader.Module.command
+        ]
+
+        self.load_subapp(self.options["main_subapp"], load_modules)
 
         installed_subapps = self.config("INSTALLED_SUBAPPS", [])
         for subapp in installed_subapps:
             if subapp == self.options["main_subapp"]:
                 continue
-            self.load_subapp(subapp, self.load_modules)
+            self.load_subapp(subapp, load_modules)
 
     def load_subapp(self, subapp: str, modules: list[Module] = []):
         """
         Loads a subapp.
         """
+        if self.manager_mode and self.loaded_managers is None:
+            self.loaded_managers = []
         for module in modules:
             match module:
                 case Autoloader.Module.route:
                     self.load_subapp_route(subapp)
                 case Autoloader.Module.event:
                     self.load_subapp_event(subapp)
+                case Autoloader.Module.command:
+                    manager = self.load_subapp_command(subapp)
+                    if manager:
+                        self.loaded_managers.append(manager)
 
     def load_subapp_route(self, subapp: str):
         """
         Loads a subapp route.
         """
-        module_name = self.module_name(subapp, "route")
+        module = Autoloader.Module.route.value
+        module_name = self.module_name(subapp, module)
         try:
-            route_module = self.import_module(subapp, "route")
+            route_module = self.import_module(subapp, module)
         except ModuleNotFoundError:
             self.logger.info(
                 f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
             return
 
-        if not hasattr(route_module, "router"):
+        entry_point = "router"
+        if not hasattr(route_module, entry_point):
             self.logger.error(f"Module '{module_name}' in subapp '{
-                              subapp}' has no router")
+                              subapp}' has no {entry_point}")
             return
 
-        router = getattr(route_module, "router")
+        router = getattr(route_module, entry_point)
         if not isinstance(router, APIRouter):
             self.logger.error(
-                f"'{module_name}.router' in subapp '{subapp}' expect: 'fastapi.APIRouter', got: {type(router)}")
+                f"'{module_name}.{entry_point}' in subapp '{subapp}' expect: 'fastapi.APIRouter', got: {type(router)}")
             return
 
         self.main.include_router(route_module.router)
@@ -144,9 +170,10 @@ class Autoloader:
         """
         Loads and registers a subapp event.
         """
-        module_name = self.module_name(subapp, "event")
+        module = Autoloader.Module.event.value
+        module_name = self.module_name(subapp, module)
         try:
-            event_module = self.import_module(subapp, "event")
+            event_module = self.import_module(subapp, module)
         except ModuleNotFoundError:
             self.logger.info(
                 f"SKIPPING. Module '{module_name}' not found in subapp: {subapp}.")
@@ -166,6 +193,64 @@ class Autoloader:
         if hasattr(event_module, ON_SHUTDOWN) and callable(
                 getattr(event_module, ON_SHUTDOWN)):
             self.main.router.on_shutdown.append(event_module.on_shutdown)
+
+    def load_subapp_command(self, subapp: str):
+        """
+        Loads the subapp commands into the manager
+        """
+        module = Autoloader.Module.command.value
+        module_name = self.module_name(subapp, module)
+        try:
+            command_module = self.import_module(subapp, module)
+        except ModuleNotFoundError:
+            # NOTE silently ignore if a command module is not found
+            return None
+
+        entry_point = "manager"
+        if not hasattr(command_module, entry_point):
+            # NOTE silently ignore if a manager is not found
+            return None
+
+        manager = getattr(command_module, entry_point)
+        if not isinstance(manager, APIManager):
+            self.logger.error(
+                f"'{module_name}.{entry_point}' in subapp '{subapp}' expect: 'app.manager.APIManager', got: {type(manager)}")
+            return None
+
+        if getattr(manager, "title") is None:
+            manager.title = subapp
+        return manager
+
+    def get_parser(self) -> tuple[ArgumentParser, dict[str, Callable]]:
+        """
+        Parses the command line arguments with loaded subapps commands.
+        """
+        action_dict = {}
+
+        def create_subparser(subparsers, command: Command):
+            subparser = subparsers.add_parser(
+                command["name"],
+                help=command.get("help", None)
+            )
+            for arg in command["arguments"]:
+                subparser.add_argument(
+                    *arg.get("name_or_flags", []),
+                    type=arg.get("type", str),
+                    help=arg.get("help", None),
+                    default=arg.get("default", None),
+                )
+            action_dict[command["name"]] = command["action"]
+        parser = ArgumentParser()
+        subparsers = parser.add_subparsers(
+            title="commands",
+            dest="command"
+        )
+        for manager in self.loaded_managers:
+            if len(manager.commands) == 0:
+                continue
+            for command in manager.commands:
+                create_subparser(subparsers, command)
+        return parser, action_dict
 
 
 def get_config(name: str, default: Any = None):

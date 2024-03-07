@@ -1,59 +1,79 @@
-import os
-import shutil
-
-from typing import Optional
-from pathlib import Path
+from functools import wraps
+from typing import Any, Callable, NotRequired, Optional, TypeAlias, TypedDict
 
 
-def subapp(root_dir: str, name: str, main_subapp: str,
-           route: Optional[str] = None):
-    target_path = os.path.join(root_dir, "app", name)
-    if os.path.exists(target_path):
-        print(f"Subapp '{name}' already exists.")
-        return
-
-    def create_file(name: str, content: str | list[str] = ""):
-        file_path = os.path.join(target_path, name)
-        with open(file_path, "w", encoding="utf-8", newline=os.linesep) as f:
-            if isinstance(content, list):
-                f.write(os.linesep.join(content))
-            else:
-                f.write(content)
-
-    os.mkdir(target_path)
-    create_file("__init__.py")
-    create_file("schema.py", [
-        f"from app.{main_subapp}.schema import DataSchema, PaginatedSchema"
-    ])
-    create_file("model.py", [
-        f"from app.{main_subapp}.model import BaseModel"
-    ])
-    create_file("route.py", [
-        f"from fastapi import APIRouter",
-        "",
-        "",
-        (f"router = APIRouter(prefix=\"{
-         route}\")" if route else "router = APIRouter()"),
-    ])
-    create_file("event.py", [
-        "from fastapi import FastAPI",
-        "",
-        "",
-        "def on_startup() -> None:",
-        "\tpass",
-        "",
-        "",
-        "def on_shutdown() -> None:",
-        "\tpass",
-        "",
-        "",
-        "def on_install(app: FastAPI) -> None:",
-        "\tpass",
-        "",
-        "",
-    ])
+class _Argument(TypedDict):
+    name_or_flags: NotRequired[list[str]]
+    type: NotRequired[type]
+    default: NotRequired[Any]
+    help: NotRequired[str]
+    required: NotRequired[bool]
 
 
-def rm_cache(root_dir: str):
-    for p in Path(root_dir).rglob("__pycache__"):
-        shutil.rmtree(p)
+Arg: TypeAlias = _Argument
+
+
+class Command(TypedDict):
+    name: str
+    help: NotRequired[Optional[str]]
+    action: Callable
+    arguments: list[_Argument]
+
+
+class APIManager:
+    title: Optional[str]
+    help: Optional[str]
+    commands: list[Command]
+
+    def __init__(
+        self,
+        title: Optional[str] = None,
+        help: Optional[str] = None
+    ):
+        self.title = title
+        self.help = help
+        self.commands = []
+
+    def add_command(
+        self,
+        name: str,
+        help: Optional[str],
+        action: Callable,
+        arguments: list[_Argument]
+    ):
+        self.commands.append(
+            Command(
+                name=name,
+                help=help,
+                action=action,
+                arguments=arguments
+            )
+        )
+
+    def command(self, **kwargs: Any):
+        def decorator(func: Callable):
+            @wraps
+            def wrapper():
+                pass
+            self.commands.append(
+                Command(
+                    name=kwargs.get("_name", func.__name__).replace("_", "-"),
+                    help=(kwargs.get("_help", func.__doc__) or "").strip(),
+                    action=func,
+                    arguments=[
+                        Arg(
+                            **{
+                                **value,
+                                "name_or_flags": value.get("name_or_flags", [key])
+                            },
+                        ) for key, value in dict(
+                            filter(
+                                lambda pair: not pair[0].startswith("_"),
+                                kwargs.items()
+                            )
+                        ).items()
+                    ]
+                )
+            )
+            return wrapper
+        return decorator
