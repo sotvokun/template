@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "es2022",
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+
+    /* Modules */
+    "module": "nodenext",
+    "rootDir": "./src",
+    "moduleResolution": "nodenext",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* Emit */
+    "sourceMap": true,
+    "outDir": "./dist",
+    "removeComments": true,
+    "sourceRoot": "./src",
+    "mapRoot": "./src",
+
+    /* Interop Constraints */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Type Checking */
+    "strict": true,
+
+    /* Completeness */
+    "skipLibCheck": true
+  }
+}

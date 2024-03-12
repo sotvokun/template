@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "tsc && tsc-alias"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.8.2",
+    "fast-glob": "^3.3.2",
+    "hono": "^4.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.25",
+    "tsc-alias": "^1.8.8",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.2"
+  }
+}
