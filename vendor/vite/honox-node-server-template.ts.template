@@ -1,0 +1,23 @@
+/// <reference types="hono" />
+/// <reference types="vite/client" />
+
+import { Hono } from 'hono';
+import { serveStatic } from '@hono/node-server/serve-static';
+import { serve } from '@hono/node-server';
+
+const worker = new Hono();
+worker.use('/static/*', serveStatic({ root: './dist' }));
+
+const modules = import.meta.glob(['/app/server.ts'], { import: 'default', eager: true });
+for (const [, app] of Object.entries(modules)) {
+  if (app) {
+    // @ts-ignore
+    worker.route('/', app);
+    // @ts-ignore
+    worker.notFound(app.notFoundHandler);
+  }
+}
+
+serve({ ...worker, port: 3000 }, (info) => {
+  console.log(`Listening on http://localhost:${info.port}`);
+});
