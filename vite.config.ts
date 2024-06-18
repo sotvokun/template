@@ -5,6 +5,10 @@ import { honoxNodeServer } from './vendor/vite/honox-node-server-plugin';
 import client from 'honox/vite/client';
 
 export default defineConfig(({ mode }) => ({
+  build: {
+    assetsDir: 'static',
+    ssrEmitAssets: true,
+  },
   plugins:
     mode === 'client'
       ? [client()]
