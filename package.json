@@ -2,8 +2,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --mode client && vite build",
-    "fmt": "biome format . --write"
+    "build": "vite build --mode client && vite build"
   },
   "dependencies": {
     "@hono/node-server": "^1.11.3",
@@ -11,7 +10,6 @@
     "honox": "^0.1.23"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.8.1",
     "@types/node": "^20.14.2",
     "vite": "^5.3.1"
   }
