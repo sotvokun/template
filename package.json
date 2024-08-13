@@ -6,11 +6,11 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
-    "hono": "^4.5.4",
-    "honox": "^0.1.23"
+    "hono": "^4.5.5",
+    "honox": "^0.1.24"
   },
   "devDependencies": {
-    "@types/node": "^22.1.0",
+    "@types/node": "^22.2.0",
     "vite": "^5.4.0"
   }
 }
