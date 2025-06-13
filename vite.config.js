@@ -11,7 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    }
+    },
   },
   plugins: [
     pages(),
@@ -23,6 +23,6 @@ export default defineConfig({
         'vue',
       ],
       dts: 'src/types/auto-imports.d.ts',
-    })
+    }),
   ],
 })
