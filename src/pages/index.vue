@@ -1,5 +1,5 @@
 <script setup>
-import Greetings from '../components/Greetings.jsx'
+import Greetings from '@/components/Greetings.jsx'
 </script>
 
 <template>

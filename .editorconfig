@@ -1,0 +1,11 @@
+[*.{js,jsx,ts,tsx,vue}]
+indent_style = space
+indent_size = 2
+
+[*.{css,scss,sass,less,styl}]
+indent_style = space
+indent_size = 2
+
+[*.{html,json,yml,yaml}]
+indent_style = space
+indent_size = 2

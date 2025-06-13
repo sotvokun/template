@@ -2,9 +2,7 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 
-import routes from 'virtual:generated-pages'
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import 'virtual:uno.css'
+import routes from '~pages'
 
 import App from './App.vue'
 
@@ -14,7 +12,6 @@ const router = createRouter({
 })
 
 const pinia = createPinia()
-pinia.use(piniaPluginPersistedstate)
 
 createApp(App)
   .use(router)
